@@ -128,7 +128,7 @@ try:
     # Step 6: Handle the Response
     if response.status_code == 200:
         access_token = response.json().get('access_token')
-        # print("Access Token:", access_token)
+        print("Access Token:", access_token)
         
         # Write the access token to a file
         with open("access_token.txt", "w") as token_file:
