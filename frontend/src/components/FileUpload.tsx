@@ -75,8 +75,9 @@ export default function FileUpload(): JSX.Element {
             const formData = new FormData();
             formData.append("file", file.content as File);
 
+            console.log(`Uploading ${file.name} to the backend...`);
             // Send POST request to upload .zip file
-            const response = await fetch("http://52.38.228.48:5000/upload", {
+            const response = await fetch('http://172.26.2.103:5000/upload', {
               method: "POST",
               body: formData,
             });

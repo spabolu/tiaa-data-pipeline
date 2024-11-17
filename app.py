@@ -1,4 +1,5 @@
-import os
+from io import BytesIO
+import zipfile
 import uuid
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -7,16 +8,18 @@ from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 
 from aws.s3 import get_s3
-
 from pipe._0ingestion import fetch_files
 from pipe._1cleaning import cleaning
-# from pipe._2transform import 
-# from pipe._3check import 
-# from pipe._4report import 
+# from pipe._2transform import transform
+# from pipe._3check import data_quality_checks
+# from pipe._4report import generate_summary_report
 
+# Load environment variables
 load_dotenv(dotenv_path=".env.local")
+
+# Initialize Flask app
 app = Flask(__name__)
-CORS(app) 
+CORS(app)
 
 @app.route('/pipeline', methods=['POST'])
 def pipeline():
@@ -34,27 +37,18 @@ def pipeline():
         # Step 2: Cleaning
         cleaned_dataframes = cleaning(ingested_files)
 
-        # Step 3: Transformation
+        # Steps 3 and 4: Transformation and Reporting (commented for now)
         # transformed_dataframes = transform(cleaned_dataframes)
-
-        # Step 4: Metadata and Reporting
         # report = generate_summary_report(transformed_dataframes)
         # data_quality_checks(transformed_dataframes)
 
-        return jsonify({
-            "message": "Pipeline executed successfully"
-        }), 200
+        return jsonify({"message": "Pipeline executed successfully"}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-def create_unique_bucket_name(base_name: str) -> str:
-    """Generate a unique S3 bucket name."""
-    unique_suffix = uuid.uuid4().hex[:8]  # Generate a random suffix
-    return f"{base_name}-{unique_suffix}"
-
 @app.route("/upload", methods=["POST"])
-def upload_and_create_bucket():
+def upload_to_existing_bucket():
     if "file" not in request.files:
         return jsonify({"error": "No file part in the request"}), 400
 
@@ -69,23 +63,43 @@ def upload_and_create_bucket():
     # Secure the filename
     filename = secure_filename(file.filename)
 
+    # Use an existing bucket name from environment variable
+    bucket_name = "saketh-fat-bucket"
+    
     try:
-        # Generate a unique bucket name
-        base_bucket_name = "uploaded-files"
-        unique_bucket_name = create_unique_bucket_name(base_bucket_name)
+        # Initialize S3 client
+        s3_client = get_s3()
 
-        # Create the new S3 bucket
-        get_s3.create_bucket(
-            Bucket=unique_bucket_name,
-            CreateBucketConfiguration={"LocationConstraint": os.getenv("AWS_S3_REGION")},
-        )
+        # Step 1: Delete all existing files in the bucket
+        try:
+            objects = s3_client.list_objects_v2(Bucket=bucket_name)
+            if "Contents" in objects:
+                keys = [{"Key": obj["Key"]} for obj in objects["Contents"]]
+                s3_client.delete_objects(
+                    Bucket=bucket_name,
+                    Delete={"Objects": keys}
+                )
+        except ClientError as e:
+            return jsonify({"error": f"Failed to delete existing files: {str(e)}"}), 500
 
-        # Upload the file to the new bucket
-        get_s3.upload_fileobj(file, unique_bucket_name, filename)
+        # Step 2: Extract the .zip file
+        try:
+            file_content = BytesIO(file.read())
+            with zipfile.ZipFile(file_content) as z:
+                for zipped_file in z.namelist():
+                    if zipped_file.endswith("/"):
+                        continue  # Skip directories
+                    file_data = z.read(zipped_file)  # Read the file contents
+                    s3_client.put_object(
+                        Bucket=bucket_name,
+                        Key=zipped_file,  # Use the file's name as the key
+                        Body=file_data
+                    )
+        except zipfile.BadZipFile:
+            return jsonify({"error": "The uploaded file is not a valid .zip archive"}), 400
 
         return jsonify({
-            "message": f"File '{filename}' uploaded successfully!",
-            "bucket_name": unique_bucket_name,
+            "message": f"Contents of '{filename}' uploaded successfully to bucket '{bucket_name}'."
         }), 200
 
     except ClientError as e:
