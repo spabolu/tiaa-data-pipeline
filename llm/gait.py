@@ -66,5 +66,5 @@ class gAit:
             return None
 
 # ai = gAit()
-# response = ai.ask_llm("What is (5+5)?")
+# response = ai.ask_llm(prompt="What is (5+5)?", model="Azure OpenAI GPT-4o (External)")
 # print(response)
