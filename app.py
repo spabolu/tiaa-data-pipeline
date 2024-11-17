@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from dotenv import load_dotenv
 
 from pipe._0ingestion import fetch_files
 from pipe._1cleaning import cleaning
@@ -6,6 +7,7 @@ from pipe._1cleaning import cleaning
 # from pipe._4report import 
 # from pipe._3check import 
 
+load_dotenv(dotenv_path=".env.local")
 app = Flask(__name__)
 
 @app.route('/pipeline', methods=['POST'])
@@ -32,8 +34,7 @@ def pipeline():
         # data_quality_checks(transformed_dataframes)
 
         return jsonify({
-            "message": "Pipeline executed successfully",
-            # "report": report.to_dict(orient="records"),
+            "message": "Pipeline executed successfully"
         }), 200
 
     except Exception as e:

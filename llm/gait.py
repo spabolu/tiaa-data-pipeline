@@ -1,21 +1,37 @@
+import os
 import requests
 import json
 from typing import Optional
+from dotenv import load_dotenv
+
+load_dotenv(dotenv_path=".env.local")
 
 class gAit:
     def __init__(self, token_file: str = "access_token.txt"):
-        # Read the access token from the text file
-        with open(token_file, "r") as token_file:
-            self.access_token = token_file.read().strip()
+        try:
+            with open(token_file, "r") as file:
+                self.access_token = file.read().strip()
+        except FileNotFoundError:
+            raise ValueError(f"The file {token_file} was not found. Please provide a valid file path.")
         
         self.url = "https://api-llm.ctl-gait.clientlabsaft.com/chat/completions"
         self.headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.access_token}",
-            "x-api-key": "Bearer sk-pyzdF3wj2CFkA_C0jzzdgA"
+            "x-api-key": f"Bearer {os.getenv('X_API_KEY')}"
         }
 
     def ask_llm(self, prompt: str, model: str = "Azure OpenAI GPT-4o (External)") -> Optional[str]:
+        """
+        Generate a response from the GenAI model.
+        
+        Args:
+            prompt (str): The input prompt for the model
+            model (str): The model name to use
+
+        Returns:
+            Optional[str]: The generated response or None if the request fails
+        """
         payload = {
             "model": model,
             "messages": [
@@ -39,7 +55,7 @@ class gAit:
                 result = response.json()
                 choices = result.get("choices", [])
                 if choices:
-                    return choices[0].get("response", {}).get("content")
+                    return choices[0].get("message", {}).get("content")
             else:
                 print(f"Error: API request failed with status code {response.status_code}")
                 print(response.text)
@@ -48,3 +64,7 @@ class gAit:
         except requests.exceptions.RequestException as e:
             print(f"An error occurred: {e}")
             return None
+
+# ai = gAit()
+# response = ai.ask_llm("What is (5+5)?")
+# print(response)
