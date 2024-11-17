@@ -1,7 +1,6 @@
 from io import BytesIO
 import zipfile
-import uuid
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
 from botocore.exceptions import ClientError
 from werkzeug.utils import secure_filename
@@ -47,8 +46,16 @@ def pipeline():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/upload", methods=["POST"])
+@app.route("/upload", methods=["POST", "OPTIONS"])
 def upload_to_existing_bucket():
+    # Handle OPTIONS (preflight) requests
+    if request.method == 'OPTIONS':
+        response = make_response()
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        return response
+
     if "file" not in request.files:
         return jsonify({"error": "No file part in the request"}), 400
 
@@ -106,6 +113,10 @@ def upload_to_existing_bucket():
         return jsonify({"error": str(e)}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route("/", methods=["GET"])
+def index():
+    return jsonify({"message": "Welcome to the Data Pipeline API!"})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
