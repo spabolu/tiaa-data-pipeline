@@ -2,15 +2,15 @@ import requests
 import hashlib
 import base64
 import secrets
-from time import sleep
+
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from urllib.parse import urlparse, parse_qs, urlencode
-
 
 def generate_pkce():
     """
@@ -97,15 +97,11 @@ authorization_url = build_authorization_url(client_id, redirect_uri, scope, code
 print("Authorization URL:", authorization_url)
 
 # Step 4: Set Up Selenium
-chrome_options = Options()
-chrome_options.add_argument("--headless")
-chrome_options.add_argument("--no-sandbox")
-chrome_options.add_argument("--disable-dev-shm-usage")
-
-chrome_service = ChromeService('/usr/local/bin/chromedriver')
-driver = webdriver.Chrome(
-    service=chrome_service,
-    options=chrome_options)
+options = Options()
+options.add_argument('--headless')
+options.add_argument('--no-sandbox')
+options.add_argument('--disable-dev-shm-usage')
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
 try:
     # Navigate to the authorization URL

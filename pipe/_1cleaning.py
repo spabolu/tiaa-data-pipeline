@@ -1,10 +1,12 @@
-def datacleaning(dataframes):
-    genai = GenAIClient()
+from llm.gait import gAit
+
+def cleaning(dataframes):
+    genai = gAit()
     
     for entry in dataframes:
         print(f"DataFrame {entry['name']}:\n{entry['dataframe'].head(10)}\n")
         
-        llm_prompt_data_cleaning = '''
+        prompt = '''
         “I am going to loop through an array of data frames. I will provide the dataframe name and the head of each one. Assume I already imported the dataframes to directly use. Can you generate a Python script that performs relevant data preprocessing on these dataframes?
         Apply data cleaning and preprocessing techniques only if the dataframe exhibits the following issues:
         1. Duplicate Entries
@@ -33,18 +35,13 @@ def datacleaning(dataframes):
         Generate a Python script that applies these cleaning and preprocessing techniques to the dataframes, prints out the head of each dataframe with 10 rows after cleaning, and ensures dependencies between columns are maintained. Only respond with the code because I will directly run your response. Do not include markdown formatting like ```py. Do not include anything else.”
         '''
         
-        # exec('''pip install pandas''')
-        # Duplicates, Inconsistent Formatting, Data Types
-        # Inconsistent formatting within the
-        # column/heading/attribute, or inconsitent data types within the column/heading/attribute.
-        
         for entry in dataframes:
             name, df = entry['name'], entry['dataframe']
-            llm_prompt_data_cleaning += f"\nDataframe Name: {name}\nHead:\n{df.head(10).to_string(index=False)}\n"
+            prompt += f"\nDataframe Name: {name}\nHead:\n{df.head(10).to_string(index=False)}\n"
         
         while True:
             # Send prompt to the LLM and get a response
-            response = genai.generate_response(llm_prompt_data_cleaning)
+            response = genai.ask_llm(prompt)
             if response:
                 # Print the response in red (error highlighting)
                 print("\033[91m" + response + "\033[0m")
@@ -56,6 +53,6 @@ def datacleaning(dataframes):
                 except Exception as e:
                     print(f"Error executing generated code: {e}")
                     # If error occurs, ask the LLM to adjust the code and retry
-                    llm_prompt_data_cleaning += f"\nError encountered: {str(e)}\nPlease adjust the code and try again.\n"
+                    prompt += f"\nError encountered: {str(e)}\nPlease adjust the code and try again.\n"
             else:
                 print("No response from LLM. Retrying...")
