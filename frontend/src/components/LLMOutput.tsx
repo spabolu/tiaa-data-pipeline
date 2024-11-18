@@ -1,108 +1,64 @@
-import { useEffect, useState } from "react";
-import { io } from "socket.io-client";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Terminal, FileCode, Database } from "lucide-react";
+import { useState, useEffect } from 'react';
+import { io } from 'socket.io-client';
 
-interface CodeSnippet {
-  stage: string;
-  code: string;
+// Define the interface for the output data
+interface LLMOutputData {
+  step: string;
+  status: string;
+  description?: string;
+  elapsed_time?: number;
   timestamp: string;
-  type: 'sql' | 'python' | 'output';
 }
 
-export default function LLMOutput() {
-  const [codeSnippets, setCodeSnippets] = useState<CodeSnippet[]>([]);
-  const [activeTab, setActiveTab] = useState("all");
-  
-  useEffect(() => {
-    const socket = io("http://52.38.228.48:5000");
+const socket = io('http://52.38.228.48:5000/');
 
-    socket.on("pipeline_code", (data: CodeSnippet) => {
-      setCodeSnippets(prev => [...prev, data]);
+export default function LLMOutput() {
+  // Initialize the state with the correct type
+  const [outputs, setOutputs] = useState<LLMOutputData[]>([]);
+
+  useEffect(() => {
+    // Listen for 'pipeline_update' events
+    socket.on('pipeline_update', (data: LLMOutputData) => {
+      setOutputs((prevOutputs) => [...prevOutputs, data]);
     });
 
+    // Listen for 'pipeline_error' events
+    socket.on('pipeline_error', (error: { error: string }) => {
+      setOutputs((prevOutputs) => [
+        ...prevOutputs,
+        { step: 'Error', status: 'failed', description: error.error, timestamp: new Date().toISOString() },
+      ]);
+    });
+
+    // Cleanup on unmount
     return () => {
-      socket.disconnect();
+      socket.off('pipeline_update');
+      socket.off('pipeline_error');
     };
   }, []);
 
-  const formatTimestamp = (timestamp: string) => {
-    return new Date(timestamp).toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-  };
-
-  const filteredSnippets = activeTab === "all" 
-    ? codeSnippets 
-    : codeSnippets.filter(snippet => snippet.type === activeTab);
-
   return (
-    <Card className="mt-4">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Terminal className="h-5 w-5" />
-            <CardTitle>Live Pipeline Code</CardTitle>
-          </div>
-        </div>
-        <CardDescription>
-          Real-time code execution and output from the pipeline
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="all" className="flex items-center gap-2">
-              <FileCode className="h-4 w-4" />
-              All
-            </TabsTrigger>
-            <TabsTrigger value="python" className="flex items-center gap-2">
-              <Terminal className="h-4 w-4" />
-              Python
-            </TabsTrigger>
-            <TabsTrigger value="sql" className="flex items-center gap-2">
-              <Database className="h-4 w-4" />
-              SQL
-            </TabsTrigger>
-            <TabsTrigger value="output" className="flex items-center gap-2">
-              <Terminal className="h-4 w-4" />
-              Output
-            </TabsTrigger>
-          </TabsList>
-          <ScrollArea className="h-[400px] mt-4 rounded-md border p-4">
-            <div className="space-y-4">
-              {filteredSnippets.map((snippet, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="flex items-center justify-between text-sm text-zinc-500">
-                    <span className="font-semibold text-zinc-700">
-                      {snippet.stage}
-                    </span>
-                    <span>{formatTimestamp(snippet.timestamp)}</span>
-                  </div>
-                  <pre className="overflow-x-auto rounded-lg bg-zinc-950 p-4">
-                    <code className="text-sm text-zinc-50">{snippet.code}</code>
-                  </pre>
-                </div>
-              ))}
-              {filteredSnippets.length === 0 && (
-                <div className="flex h-[300px] items-center justify-center text-zinc-500">
-                  <p>No code output yet...</p>
-                </div>
-              )}
-            </div>
-          </ScrollArea>
-        </Tabs>
-      </CardContent>
-    </Card>
+    <div style={{ padding: '1rem', fontFamily: 'Arial, sans-serif' }}>
+      <h2>Live LLM Output</h2>
+      <ul>
+        {outputs.map((output, index) => (
+          <li key={index} style={{ marginBottom: '1rem' }}>
+            <strong>Step:</strong> {output.step} <br />
+            <strong>Status:</strong> {output.status} <br />
+            {output.description && (
+              <>
+                <strong>Description:</strong> {output.description} <br />
+              </>
+            )}
+            {output.elapsed_time !== undefined && (
+              <>
+                <strong>Elapsed Time:</strong> {output.elapsed_time} ms <br />
+              </>
+            )}
+            <strong>Timestamp:</strong> {output.timestamp}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
