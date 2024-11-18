@@ -41,15 +41,15 @@ def emit_progress(step_name, status, description=None):
         'timestamp': datetime.now().isoformat()
     })
 
-@app.route('/', methods=['GET'])
+@app.route('/pipeline', methods=['POST', 'GET'])
 def pipeline():
     try:
-        # data = request.get_json()
-        # bucket_name = data.get('bucket')
-        # file_keys = data.get('file_keys', [])
+        data = request.get_json()
+        bucket_name = data.get('bucket')
+        file_keys = data.get('file_keys', [])
 
-        # if not bucket_name or not file_keys:
-        #     return jsonify({"error": "Invalid input. 'bucket' and 'file_keys' are required."}), 400
+        if not bucket_name or not file_keys:
+            return jsonify({"error": "Invalid input. 'bucket' and 'file_keys' are required."}), 400
 
         # Step 1: Ingestion
         emit_progress("Data Ingestion", "in_progress", "Starting data ingestion...")
@@ -112,7 +112,7 @@ def upload_to_existing_bucket():
     filename = secure_filename(file.filename)
 
     # Use an existing bucket name from environment variable
-    bucket_name = "saketh-fat-bucket"
+    bucket_name = "sparky-pipeline-input"
     
     try:
         # Initialize S3 client
@@ -147,15 +147,6 @@ def upload_to_existing_bucket():
                     file_keys.append(zipped_file)
         except zipfile.BadZipFile:
             return jsonify({"error": "The uploaded file is not a valid .zip archive"}), 400
-
-        # Trigger the pipeline with the uploaded file keys
-        pipeline_data = {
-            "bucket": bucket_name,
-            "file_keys": file_keys
-        }
-        pipeline_response = pipeline(pipeline_data)
-
-        return pipeline_response
 
     except ClientError as e:
         return jsonify({"error": str(e)}), 500
