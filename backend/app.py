@@ -1,12 +1,16 @@
 from io import BytesIO
+from dotenv import load_dotenv
+
 import zipfile
 from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
+from flask_socketio import SocketIO, emit
+
 from botocore.exceptions import ClientError
 from werkzeug.utils import secure_filename
-from dotenv import load_dotenv
 
 from aws.s3 import get_s3
+
 from pipe._0ingestion import fetch_files
 from pipe._1cleaning import cleaning
 # from pipe._2transform import transform
@@ -19,6 +23,15 @@ load_dotenv(dotenv_path=".env.local")
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+@socketio.on('connect')
+def handle_connect():
+    print('Client connected')
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    print('Client disconnected')
 
 @app.route('/pipeline', methods=['POST'])
 def pipeline():
@@ -32,9 +45,11 @@ def pipeline():
 
         # Step 1: Ingestion
         ingested_files = fetch_files(bucket_name, file_keys)
+        socketio.emit('pipeline_update', {'step': 'Data Ingestion', 'status': 'completed'})
 
         # Step 2: Cleaning
         cleaned_dataframes = cleaning(ingested_files)
+        socketio.emit('pipeline_update', {'step': 'Data Cleaning', 'status': 'completed'})
 
         # Steps 3 and 4: Transformation and Reporting (commented for now)
         # transformed_dataframes = transform(cleaned_dataframes)
@@ -45,6 +60,7 @@ def pipeline():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/upload", methods=["POST", "OPTIONS"])
 def upload_to_existing_bucket():
@@ -90,6 +106,7 @@ def upload_to_existing_bucket():
             return jsonify({"error": f"Failed to delete existing files: {str(e)}"}), 500
 
         # Step 2: Extract the .zip file
+        file_keys = []
         try:
             file_content = BytesIO(file.read())
             with zipfile.ZipFile(file_content) as z:
@@ -102,12 +119,18 @@ def upload_to_existing_bucket():
                         Key=zipped_file,  # Use the file's name as the key
                         Body=file_data
                     )
+                    file_keys.append(zipped_file)
         except zipfile.BadZipFile:
             return jsonify({"error": "The uploaded file is not a valid .zip archive"}), 400
 
-        return jsonify({
-            "message": f"Contents of '{filename}' uploaded successfully to bucket '{bucket_name}'."
-        }), 200
+        # Trigger the pipeline with the uploaded file keys
+        pipeline_data = {
+            "bucket": bucket_name,
+            "file_keys": file_keys
+        }
+        pipeline_response = pipeline(pipeline_data)
+
+        return pipeline_response
 
     except ClientError as e:
         return jsonify({"error": str(e)}), 500
@@ -119,4 +142,4 @@ def index():
     return jsonify({"message": "Welcome to the Data Pipeline API!"})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
