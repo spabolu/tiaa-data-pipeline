@@ -1,10 +1,16 @@
-import Tracker from "@/components/Tracker";
-// import FileUpload from "@/components/FileUpload";
+import { useState } from "react";
 import { Waves } from "lucide-react";
+import Tracker from "@/components/Tracker";
+import Insights from "@/components/Insights";
 import Charts from "@/components/Charts";
-import LLMOutput from "@/components/LLMOutput";
 
 function App() {
+  const [pipelineCompleted, setPipelineCompleted] = useState(false);
+
+  const handleCompletion = (completed: boolean) => {
+    setPipelineCompleted(completed);
+  };
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-zinc-50">
       <div className="flex flex-col w-full max-w-7xl gap-8 p-8">
@@ -13,10 +19,9 @@ function App() {
           <h1 className="text-4xl font-semibold text-blue-800">StreamAI</h1>
         </div>
 
-        {/* <FileUpload /> */}
-        <Tracker />
-        <LLMOutput />
+        <Tracker onCompletion={handleCompletion} />
         <Charts />
+        {pipelineCompleted && <Insights />}
       </div>
     </div>
   );

@@ -84,7 +84,7 @@ const generateRandomID = () => {
   return result;
 };
 
-export default function Tracker() {
+export default function Tracker({ onCompletion }: { onCompletion: (completed: boolean) => void }) {
   const [steps, setSteps] = useState<PipelineStep[]>(pipelineSteps);
   const [currentStep, setCurrentStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
@@ -98,9 +98,10 @@ export default function Tracker() {
 
   useEffect(() => {
     // Check if all steps are completed
-    const allCompleted = steps.every(step => step.status === 'completed');
+    const allCompleted = steps.every((step) => step.status === "completed");
     setIsCompleted(allCompleted);
-  }, [steps]);
+    onCompletion(allCompleted); // Notify parent component
+  }, [steps, onCompletion]);
 
   useEffect(() => {
     const socket = io("http://52.38.228.48:5000");
@@ -112,7 +113,7 @@ export default function Tracker() {
 
     socket.on("connect_error", (err) => {
       console.error("Connection error:", err);
-      setError("Failed to connect to the pipeline server");
+      setError("Failed to connect to the WebSocket server");
     });
 
     socket.on("pipeline_update", (data: PipelineUpdate) => {
