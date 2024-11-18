@@ -8,12 +8,16 @@ def Populate_Metadata(dataframes, schema_name):
     cursor = conn.cursor()
 
     try:
+        print("TRYING")
         # Step 1: Create the metadata table
         create_metadata_table(cursor, schema_name)
 
+        print("TABLE CREATED")
+        
         for entry in dataframes:
             df = entry["dataframe"]
             file_path = entry["name"]
+            print
             table_name = file_path.split('/')[1].split('.')[0]
 
             # Step 4: Populate the metadata table
@@ -51,7 +55,20 @@ def populate_metadata_table(cursor, schema_name, table_name, df):
 
     insert_sql = f"""
     INSERT INTO {schema_name}.metadata (data_source_name, column_descriptions, creation_time, num_rows)
-    VALUES (%s, %s, %s, %s, %s);
+    VALUES (%s, %s, %s, %s);
     """
     cursor.execute(insert_sql, (data_source_name, column_descriptions, creation_time, num_rows))
     print(f"Metadata for {data_source_name} inserted into metadata table.")
+
+
+# MOCK FUNCTION CALL
+portfolio = pd.read_csv("portfolio.csv")
+profile = pd.read_csv("profile.csv")
+transcript = pd.read_csv("transcript.csv")
+
+dataframes = [
+    {"name": "test2/portfolio.csv", "dataframe": portfolio},
+    {"name": "test2/profile.csv", "dataframe": profile},
+    {"name": "test2/transcript.csv", "dataframe": transcript}
+]
+Populate_Metadata(dataframes, "test2")

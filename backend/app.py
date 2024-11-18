@@ -188,8 +188,8 @@ def upload_to_existing_bucket():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/download_report', methods=['GET'])
-def download_report():
+@app.route('/download_pdf', methods=['GET'])
+def download_pdf():
     """Endpoint to download the business report PDF"""
     try:
         # Ensure the file path is correct
@@ -199,6 +199,51 @@ def download_report():
         return send_file(pdf_path, as_attachment=True, mimetype='application/pdf')
     except FileNotFoundError:
         return jsonify({"error": "File not found. Please ensure 'business_report.pdf' exists in the specified path."}), 404
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+    
+@app.route('/download_profile', methods=['GET'])
+def download_profile():
+    try:
+        file_path = './profile.html'  # Adjust the path as necessary
+        return send_file(
+            file_path,
+            as_attachment=True,
+            download_name='profile.html',  # Specify the desired file name
+            mimetype='text/html'  # Ensure correct MIME type
+        )
+    except FileNotFoundError:
+        return jsonify({"error": "File not found. Please ensure 'profile.html' exists in the specified path."}), 404
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+@app.route('/download_transcript', methods=['GET'])
+def download_transcript():
+    try:
+        file_path = './transcript.html'  # Adjust the path as necessary
+        return send_file(
+            file_path,
+            as_attachment=True,
+            download_name='transcript.html',  # Specify the desired file name
+            mimetype='text/html'
+        )
+    except FileNotFoundError:
+        return jsonify({"error": "File not found. Please ensure 'transcript.html' exists in the specified path."}), 404
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+@app.route('/download_portfolio', methods=['GET'])
+def download_portfolio():
+    try:
+        file_path = './portfolio.html'  # Adjust the path as necessary
+        return send_file(
+            file_path,
+            as_attachment=True,
+            download_name='portfolio.html', 
+            mimetype='text/html'
+        )
+    except FileNotFoundError:
+        return jsonify({"error": "File not found. Please ensure 'portfolio.html' exists in the specified path."}), 404
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
