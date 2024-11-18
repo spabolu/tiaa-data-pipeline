@@ -234,7 +234,7 @@ def transform(dataframes):
                 response = response[9:-3].strip()  # Strip the opening and closing markdown syntax
             # Print the response in green for success
             print("\033[95m" + response + "\033[0m")
-            
+
             # Attempt to execute the generated code
             try:
                 response += update_dataframes_code
@@ -266,7 +266,6 @@ def transform(dataframes):
     #     print(f"DataFrame {filename} has been saved.")
 
     return dataframes
-
 
 
 # import pandas as pd
