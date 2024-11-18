@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import {
   AlertCircle,
   Database,
@@ -9,17 +8,16 @@ import {
   LineChart,
   Server,
 } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
   CardFooter,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { io } from "socket.io-client";
 
 const pipelineSteps = [
   {
@@ -59,34 +57,9 @@ const pipelineSteps = [
   },
 ];
 
-const performanceData = [
-  { name: "Ingestion", value: 4000 },
-  { name: "Cleaning", value: 3000 },
-  { name: "Analysis", value: 2000 },
-  { name: "Insights", value: 2780 },
-  { name: "Distribution", value: 2390 },
-];
-
 export default function Tracker() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isAutoAdvancing, setIsAutoAdvancing] = useState(false);
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isAutoAdvancing) {
-      interval = setInterval(() => {
-        setCurrentStep((prevStep) => {
-          if (prevStep < pipelineSteps.length) {
-            return prevStep + 1;
-          } else {
-            setIsAutoAdvancing(false);
-            return prevStep;
-          }
-        });
-      }, 2000); // Advance every 2 seconds
-    }
-    return () => clearInterval(interval);
-  }, [isAutoAdvancing]);
 
   const handleAdvance = () => {
     if (currentStep < pipelineSteps.length) {
@@ -100,6 +73,26 @@ export default function Tracker() {
       setCurrentStep(1);
     }
   };
+
+  useEffect(() => {
+    const socket = io("http://52.38.228.48:5000/");
+
+    socket.on("connect", () => {
+      console.log("Connected to WebSocket server");
+    });
+
+    socket.on("pipeline_update", (data) => {
+      console.log("Pipeline update received:", data);
+      const stepIndex = pipelineSteps.findIndex(step => step.name === data.step);
+      if (stepIndex !== -1) {
+        setCurrentStep(stepIndex + 1);
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
 
   return (
     <>
@@ -167,11 +160,11 @@ export default function Tracker() {
                           className={cn(
                             "flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300",
                             isCompleted &&
-                              "border-red-900 bg-red-600 text-white",
+                            "border-red-900 bg-red-600 text-white",
                             isCurrent && "border-red-400 bg-white text-red-400",
                             !isCompleted &&
-                              !isCurrent &&
-                              "border-zinc-300 bg-white text-zinc-300"
+                            !isCurrent &&
+                            "border-zinc-300 bg-white text-zinc-300"
                           )}
                         >
                           <step.icon className="h-5 w-5" />
@@ -218,35 +211,6 @@ export default function Tracker() {
             Est. Completion: {pipelineSteps.length - currentStep + 1} minutes
           </span> */}
         </CardFooter>
-      </Card>
-
-      {/* Charts */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Pipeline Performance</CardTitle>
-          <CardDescription>
-            Real-time metrics of your data pipeline
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={performanceData}>
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Bar dataKey="value" fill="#dc2626" />{" "}
-            </BarChart>
-          </ResponsiveContainer>
-          <div className="mt-4 grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <p className="text-sm font-medium">Total Records Processed</p>
-              <p className="text-2xl font-bold">1,234,567</p>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm font-medium">Average Processing Time</p>
-              <p className="text-2xl font-bold">3.5s</p>
-            </div>
-          </div>
-        </CardContent>
       </Card>
     </>
   );
