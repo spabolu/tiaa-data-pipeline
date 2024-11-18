@@ -89,14 +89,14 @@ def pipeline():
         # Reset timer for new pipeline run
         timer.stage_times.clear()
 
-        # Step 1: Ingestion
+        # Step 0: Ingestion
         timer.start_stage("Data Ingestion")
         emit_progress("Data Ingestion", "in_progress", "Starting data ingestion...")
         ingested_files = fetch_files(bucket_name, file_keys)
         elapsed = timer.end_stage()
         emit_progress("Data Ingestion", "completed", "Successfully ingested files", elapsed)
 
-        # Step 2: Cleaning
+        # Step 1: Cleaning
         timer.start_stage("Data Cleaning")
         emit_progress("Data Cleaning", "in_progress", "Starting data cleaning...")
         # cleaned_dataframes = cleaning(ingested_files)
@@ -104,7 +104,7 @@ def pipeline():
         elapsed = timer.end_stage()
         emit_progress("Data Cleaning", "completed", "Successfully cleaned data", elapsed)
 
-        # Step 3: Analysis
+        # Step 2: Analysis
         timer.start_stage("Data Analysis")
         emit_progress("Data Analysis", "in_progress", "Starting analysis...")
         transformed_dataframes = transform(ingested_files)
@@ -118,7 +118,7 @@ def pipeline():
         elapsed = timer.end_stage()
         emit_progress("Insight Generation", "completed", "Insights generated", elapsed)
 
-        # Step 5: Distribution
+        # Step 5/6: distribution/metadata
         timer.start_stage("Distribution")
         emit_progress("Distribution", "in_progress", "Preparing distribution...")
         Populate_RDS(transformed_dataframes, folder_name)
@@ -194,4 +194,3 @@ def index():
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5000, debug=True)
-    
