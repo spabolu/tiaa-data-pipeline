@@ -34,25 +34,25 @@ def cleaning(dataframes):
         Keep prompting until the output is executable and there is no error in the Python code provided.
         Generate a Python script that applies these cleaning and preprocessing techniques to the dataframes, prints out the head of each dataframe with 10 rows after cleaning, and ensures dependencies between columns are maintained. Only respond with the code because I will directly run your response. Do not include markdown formatting like ```py. Do not include anything else.”
         '''
-
-        for entry in dataframes:
-            name, df = entry['name'], entry['dataframe']
-            prompt += f"\nDataframe Name: {name}\nHead:\n{df.head(10).to_string(index=False)}\n"
+    
+    for entry in dataframes:
+        name, df = entry['name'], entry['dataframe']
+        prompt += f"\nDataframe Name: {name}\nHead:\n{df.head(10).to_string(index=False)}\n"
         
-        while True:
-            # Send prompt to the LLM and get a response
-            response = ai.ask_llm(prompt)
-            if response:
-                # Print the response in red (error highlighting)
-                print("\033[91m" + response + "\033[0m")
-                # Attempt to execute the generated code
-                try:
-                    exec(response)
-                    print("Code executed successfully!")
-                    break  # Exit loop if the code is executed without errors
-                except Exception as e:
-                    print(f"Error executing generated code: {e}")
-                    # If error occurs, ask the LLM to adjust the code and retry
-                    prompt += f"\nError encountered: {str(e)}\nPlease adjust the code and try again.\n"
-            else:
-                print("No response from LLM. Retrying...")
+    while True:
+        # Send prompt to the LLM and get a response
+        response = ai.ask_llm(prompt)
+        if response:
+            # Print the response in red (error highlighting)
+            print("\033[91m" + response + "\033[0m")
+            # Attempt to execute the generated code
+            try:
+                exec(response)
+                print("Code executed successfully!")
+                break  # Exit loop if the code is executed without errors
+            except Exception as e:
+                print(f"Error executing generated code: {e}")
+                # If error occurs, ask the LLM to adjust the code and retry
+                prompt += f"\nError encountered: {str(e)}\nPlease adjust the code and try again.\n"
+        else:
+            print("No response from LLM. Retrying...")
