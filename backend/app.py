@@ -10,6 +10,12 @@ from botocore.exceptions import ClientError
 from werkzeug.utils import secure_filename
 from aws.s3 import get_s3
 
+from pipe._0ingestion import fetch_files
+from pipe._1cleaning import cleaning
+from pipe._2transform import transform
+
+from pipe._5storage import Populate_RDS
+
 # Load environment variables
 load_dotenv(dotenv_path=".env.local")
 
@@ -46,7 +52,6 @@ def emit_progress(step_name, status, description=None):
 
 @app.route('/pipeline', methods=['POST', 'GET', 'OPTIONS'])
 def pipeline():
-    # Remove the manual CORS handling since we have global CORS config
     try:
         data = request.get_json()
         bucket_name = data.get('bucket')
@@ -55,25 +60,34 @@ def pipeline():
         if not bucket_name or not file_keys:
             return jsonify({"error": "Invalid input. 'bucket' and 'file_keys' are required."}), 400
 
-        # Rest of the pipeline code...
+        # Step 1: Ingestion
         emit_progress("Data Ingestion", "in_progress", "Starting data ingestion...")
-        time.sleep(2)
+        ingested_files = fetch_files(bucket_name, file_keys)
+        # time.sleep(2)  # Simulated work
         emit_progress("Data Ingestion", "completed", "Successfully ingested files")
 
+        # Step 2: Cleaning
         emit_progress("Data Cleaning", "in_progress", "Starting data cleaning...")
-        time.sleep(2)
+        cleaned_dataframes = cleaning(ingested_files)
+        # time.sleep(2)  # Simulated work
         emit_progress("Data Cleaning", "completed", "Successfully cleaned data")
 
+        # Step 3: Analysis
         emit_progress("Data Analysis", "in_progress", "Starting analysis...")
-        time.sleep(2)
+        transformed_dataframes = transform(cleaned_dataframes)
+        # time.sleep(2)  # Simulated work
         emit_progress("Data Analysis", "completed", "Analysis completed")
 
+        # Step 4: Insight Generation
         emit_progress("Insight Generation", "in_progress", "Generating insights...")
-        time.sleep(2)
+        # add next step code here
+        # time.sleep(2)  # Simulated work
         emit_progress("Insight Generation", "completed", "Insights generated")
 
+        # Step 5: Distribution
         emit_progress("Distribution", "in_progress", "Preparing distribution...")
-        time.sleep(1)
+        Populate_RDS(transformed_dataframes)
+        # time.sleep(1)  # Simulated work
         emit_progress("Distribution", "completed", "Pipeline completed successfully")
 
         return jsonify({"message": "Pipeline executed successfully"}), 200

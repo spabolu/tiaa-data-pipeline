@@ -12,7 +12,7 @@ function App() {
           <h1 className="text-4xl font-semibold text-zinc-800">StreamAI</h1>
         </div>
 
-        <FileUpload />
+        {/* <FileUpload /> */}
         <Tracker />
         <Charts />
       </div>
