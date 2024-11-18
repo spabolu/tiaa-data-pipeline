@@ -4,7 +4,7 @@ from io import BytesIO
 import time
 from dotenv import load_dotenv
 import zipfile
-from flask import Flask, request, jsonify, make_response
+from flask import Flask, request, jsonify, make_response, send_file
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 from botocore.exceptions import ClientError
@@ -187,6 +187,21 @@ def upload_to_existing_bucket():
         return jsonify({"error": str(e)}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route('/download_report', methods=['GET'])
+def download_report():
+    """Endpoint to download the business report PDF"""
+    try:
+        # Ensure the file path is correct
+        pdf_path = './business_report.pdf'  # Adjust this path as needed
+        
+        # Serve the PDF file
+        return send_file(pdf_path, as_attachment=True, mimetype='application/pdf')
+    except FileNotFoundError:
+        return jsonify({"error": "File not found. Please ensure 'business_report.pdf' exists in the specified path."}), 404
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
 
 @app.route("/", methods=["GET"])
 def index():

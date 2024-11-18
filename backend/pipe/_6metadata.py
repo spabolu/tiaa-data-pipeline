@@ -51,7 +51,7 @@ def populate_metadata_table(cursor, schema_name, table_name, df):
 
     insert_sql = f"""
     INSERT INTO {schema_name}.metadata (data_source_name, column_descriptions, creation_time, num_rows)
-    VALUES (%s, %s, %s, %s, %s);
+    VALUES (%s, %s, %s, %s);
     """
     cursor.execute(insert_sql, (data_source_name, column_descriptions, creation_time, num_rows))
     print(f"Metadata for {data_source_name} inserted into metadata table.")
