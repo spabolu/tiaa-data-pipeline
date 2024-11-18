@@ -12,7 +12,7 @@ from aws.s3 import get_s3
 
 from pipe._0ingestion import fetch_files
 from pipe._1cleaning import cleaning
-# from pipe._2transform import transform
+from pipe._2transform import transform
 # from pipe._3check import data_quality_checks
 # from pipe._4report import generate_summary_report
 

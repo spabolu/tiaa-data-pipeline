@@ -6,7 +6,7 @@ def cleaning(dataframes):
     for entry in dataframes:
         print(f"DataFrame {entry['name']}:\n{entry['dataframe'].head(10)}\n")
         
-        prompt = '''
+    prompt = '''
         “I am going to loop through an array of data frames. I will provide the dataframe name and the head of each one. Assume I already imported the dataframes to directly use. Can you generate a Python script that performs relevant data preprocessing on these dataframes?
         Apply data cleaning and preprocessing techniques only if the dataframe exhibits the following issues:
         1. Duplicate Entries
