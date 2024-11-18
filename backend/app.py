@@ -1,4 +1,5 @@
 from datetime import datetime
+import pytz
 from io import BytesIO
 import time
 from dotenv import load_dotenv
@@ -15,6 +16,7 @@ from pipe._1cleaning import cleaning
 from pipe._2transform import transform
 
 from pipe._5storage import Populate_RDS
+from pipe._6metadata import Populate_Metadata
 
 # Load environment variables
 load_dotenv(dotenv_path=".env.local")
@@ -33,6 +35,26 @@ CORS(app, resources={
 })
 socketio = SocketIO(app, cors_allowed_origins="*")
 
+class PipelineTimer:
+    def __init__(self):
+        self.start_time = None
+        self.stage_times = {}
+        self.current_stage = None
+
+    def start_stage(self, stage_name):
+        self.current_stage = stage_name
+        self.start_time = time.time()
+
+    def end_stage(self):
+        if self.start_time and self.current_stage:
+            elapsed_time = time.time() - self.start_time
+            self.stage_times[self.current_stage] = round(elapsed_time * 1000)  # Convert to milliseconds
+            self.start_time = None
+            return self.stage_times[self.current_stage]
+        return 0
+
+timer = PipelineTimer()
+
 @socketio.on('connect')
 def handle_connect():
     print('Client connected')
@@ -41,13 +63,16 @@ def handle_connect():
 def handle_disconnect():
     print('Client disconnected')
 
-def emit_progress(step_name, status, description=None):
-    """Helper function to emit progress updates"""
+arizona_tz = pytz.timezone('America/Phoenix')
+
+def emit_progress(step_name, status, description=None, elapsed_time=None):
+    """Helper function to emit progress updates with timing"""
     socketio.emit('pipeline_update', {
         'step': step_name,
         'status': status,
         'description': description,
-        'timestamp': datetime.now().isoformat()
+        'timestamp': datetime.now(arizona_tz).isoformat(),
+        'elapsed_time': elapsed_time
     })
 
 @app.route('/pipeline', methods=['POST', 'GET', 'OPTIONS'])
@@ -61,48 +86,58 @@ def pipeline():
         if not bucket_name or not file_keys:
             return jsonify({"error": "Invalid input. 'bucket' and 'file_keys' are required."}), 400
 
+        # Reset timer for new pipeline run
+        timer.stage_times.clear()
+
         # Step 1: Ingestion
+        timer.start_stage("Data Ingestion")
         emit_progress("Data Ingestion", "in_progress", "Starting data ingestion...")
         ingested_files = fetch_files(bucket_name, file_keys)
-        # time.sleep(2)  # Simulated work
-        emit_progress("Data Ingestion", "completed", "Successfully ingested files")
+        elapsed = timer.end_stage()
+        emit_progress("Data Ingestion", "completed", "Successfully ingested files", elapsed)
 
         # Step 2: Cleaning
+        timer.start_stage("Data Cleaning")
         emit_progress("Data Cleaning", "in_progress", "Starting data cleaning...")
         # cleaned_dataframes = cleaning(ingested_files)
-        # time.sleep(2)  # Simulated work
-        emit_progress("Data Cleaning", "completed", "Successfully cleaned data")
+        time.sleep(2)  # Simulated work (REMOVE IN PROD)
+        elapsed = timer.end_stage()
+        emit_progress("Data Cleaning", "completed", "Successfully cleaned data", elapsed)
 
         # Step 3: Analysis
+        timer.start_stage("Data Analysis")
         emit_progress("Data Analysis", "in_progress", "Starting analysis...")
         transformed_dataframes = transform(ingested_files)
-        # time.sleep(2)  # Simulated work
-        emit_progress("Data Analysis", "completed", "Analysis completed")
+        elapsed = timer.end_stage()
+        emit_progress("Data Analysis", "completed", "Analysis completed", elapsed)
 
         # Step 4: Insight Generation
+        timer.start_stage("Insight Generation")
         emit_progress("Insight Generation", "in_progress", "Generating insights...")
-        # add next step code here
-        # time.sleep(2)  # Simulated work
-        emit_progress("Insight Generation", "completed", "Insights generated")
+        time.sleep(2)  # Simulated work
+        elapsed = timer.end_stage()
+        emit_progress("Insight Generation", "completed", "Insights generated", elapsed)
 
-        print("BEFORE RDS")
         # Step 5: Distribution
+        timer.start_stage("Distribution")
         emit_progress("Distribution", "in_progress", "Preparing distribution...")
         Populate_RDS(transformed_dataframes, folder_name)
-        # time.sleep(1)  # Simulated work
-        emit_progress("Distribution", "completed", "Pipeline completed successfully")
-        
-        print("AFTER RDS")
+        Populate_Metadata(transformed_dataframes, folder_name)
+        elapsed = timer.end_stage()
+        emit_progress("Distribution", "completed", "Pipeline completed successfully", elapsed)
 
-        return jsonify({"message": "Pipeline executed successfully"}), 200
+        return jsonify({
+            "message": "Pipeline executed successfully",
+            "timing": timer.stage_times
+        }), 200
 
     except Exception as e:
         socketio.emit('pipeline_error', {'error': str(e)})
         return jsonify({"error": str(e)}), 500
 
+
 @app.route("/upload", methods=["POST", "OPTIONS"])
 def upload_to_existing_bucket():
-    # Remove the manual CORS handling since we have global CORS config
     if "file" not in request.files:
         return jsonify({"error": "No file part in the request"}), 400
 
@@ -159,3 +194,4 @@ def index():
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    
