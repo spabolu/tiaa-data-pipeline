@@ -1,4 +1,7 @@
 from llm.gait import gAit
+import pandas as pd
+from datetime import datetime
+import numpy as np
 
 def transform(dataframes):
     ai = gAit()
@@ -255,27 +258,27 @@ def transform(dataframes):
             print("No response from LLM. Retrying...")
 
 
-    for i, entry in enumerate(dataframes):
-        df = entry["dataframe"]  # Extract the DataFrame
-        name = entry.get("name", f"dataframe_{i+1}")  # Get the name or default to 'dataframe_1', 'dataframe_2', etc.
-        filename = f"{name}_transformed.csv"  # Append '_transformed' to the dataframe name
-        df.to_csv(filename, index=False)  # Save the dataframe to a CSV file without the index
-        print(f"DataFrame {filename} has been saved.")
+    # for i, entry in enumerate(dataframes):
+    #     df = entry["dataframe"]  # Extract the DataFrame
+    #     name = entry.get("name", f"dataframe_{i+1}")  # Get the name or default to 'dataframe_1', 'dataframe_2', etc.
+    #     filename = f"{name}_transformed.csv"  # Append '_transformed' to the dataframe name
+    #     df.to_csv(filename, index=False)  # Save the dataframe to a CSV file without the index
+    #     print(f"DataFrame {filename} has been saved.")
 
     return dataframes
 
 
 
-import pandas as pd
-# MOCK FUNCTION CALL
-if __name__ == "__main__":
-    portfolio = pd.read_csv("portfolio.csv")
-    profile = pd.read_csv("profile.csv")
-    transcript = pd.read_csv("transcript.csv")
+# import pandas as pd
+# # MOCK FUNCTION CALL
+# if __name__ == "__main__":
+#     portfolio = pd.read_csv("portfolio.csv")
+#     profile = pd.read_csv("profile.csv")
+#     transcript = pd.read_csv("transcript.csv")
 
-    dataframes = [
-        {"name": "portfolio", "dataframe": portfolio},
-        {"name": "profile", "dataframe": profile},
-        {"name": "transcript", "dataframe": transcript}
-    ]
-    transform(dataframes)
+#     dataframes = [
+#         {"name": "portfolio", "dataframe": portfolio},
+#         {"name": "profile", "dataframe": profile},
+#         {"name": "transcript", "dataframe": transcript}
+#     ]
+#     transform(dataframes)

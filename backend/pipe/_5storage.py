@@ -12,7 +12,7 @@ def Populate_RDS(dataframes, schema_name):
 
         for entry in dataframes:
             df = entry["dataframe"]
-            table_name = entry["name"]
+            table_name = entry["name"].split('/')[1]
             
             # Step 2: Create tables
             create_table(cursor, schema_name, table_name, df)
@@ -65,19 +65,17 @@ def populate_table(cursor, conn, schema_name, table_name, df):
 
 
 # MOCK FUNCTION CALL
-if __name__ == "__main__":
-    portfolio = pd.read_csv("portfolio.csv")
-    profile = pd.read_csv("profile.csv")
-    transcript = pd.read_csv("transcript.csv")
+# portfolio = pd.read_csv("portfolio.csv")
+# profile = pd.read_csv("profile.csv")
+# transcript = pd.read_csv("transcript.csv")
 
-    dataframes = [
-        {"name": "portfolio", "dataframe": portfolio},
-        {"name": "profile", "dataframe": profile},
-        {"name": "transcript", "dataframe": transcript}
-    ]
-    Populate_RDS(dataframes, "test2")
+# dataframes = [
+#     {"name": "portfolio", "dataframe": portfolio},
+#     {"name": "profile", "dataframe": profile},
+#     {"name": "transcript", "dataframe": transcript}
+# ]
+# Populate_RDS(dataframes, "test2")
     
-
 # def AI_generate_tables_with_relationships(dataframes, connection):
 #     ai = gAit()
 #     cursor = connection.cursor()
@@ -117,6 +115,14 @@ if __name__ == "__main__":
 #             print(f"Error creating table {name}: {e}")
 #             connection.rollback()
 
+# # MOCK FUNCTION CALL
+# portfolio = pd.read_csv("portfolio.csv")
+# profile = pd.read_csv("profile.csv")
+# transcript = pd.read_csv("transcript.csv")
 
-    
-
+# dataframes = [
+#     {"name": "portfolio", "dataframe": portfolio},
+#     {"name": "profile", "dataframe": profile},
+#     {"name": "transcript", "dataframe": transcript}
+# ]
+# Populate_RDS(dataframes, "test2")

@@ -69,13 +69,13 @@ def pipeline():
 
         # Step 2: Cleaning
         emit_progress("Data Cleaning", "in_progress", "Starting data cleaning...")
-        cleaned_dataframes = cleaning(ingested_files)
+        # cleaned_dataframes = cleaning(ingested_files)
         # time.sleep(2)  # Simulated work
         emit_progress("Data Cleaning", "completed", "Successfully cleaned data")
 
         # Step 3: Analysis
         emit_progress("Data Analysis", "in_progress", "Starting analysis...")
-        transformed_dataframes = transform(cleaned_dataframes)
+        transformed_dataframes = transform(ingested_files)
         # time.sleep(2)  # Simulated work
         emit_progress("Data Analysis", "completed", "Analysis completed")
 
@@ -85,11 +85,14 @@ def pipeline():
         # time.sleep(2)  # Simulated work
         emit_progress("Insight Generation", "completed", "Insights generated")
 
+        print("BEFORE RDS")
         # Step 5: Distribution
         emit_progress("Distribution", "in_progress", "Preparing distribution...")
         Populate_RDS(transformed_dataframes, folder_name)
         # time.sleep(1)  # Simulated work
         emit_progress("Distribution", "completed", "Pipeline completed successfully")
+        
+        print("AFTER RDS")
 
         return jsonify({"message": "Pipeline executed successfully"}), 200
 
