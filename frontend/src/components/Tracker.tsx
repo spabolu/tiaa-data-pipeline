@@ -7,6 +7,7 @@ import {
   FileSpreadsheet,
   LineChart,
   Server,
+  CheckCircle2,
   LucideIcon,
 } from "lucide-react";
 import {
@@ -74,11 +75,32 @@ const pipelineSteps: PipelineStep[] = [
   },
 ];
 
+const generateRandomID = () => {
+  const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let result = "#";
+  for (let i = 0; i < 8; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return result;
+};
+
 export default function Tracker() {
   const [steps, setSteps] = useState<PipelineStep[]>(pipelineSteps);
   const [currentStep, setCurrentStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<string | null>(null);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [pipelineID, setPipelineID] = useState("");
+
+  useEffect(() => {
+    setPipelineID(generateRandomID());
+  }, []);
+
+  useEffect(() => {
+    // Check if all steps are completed
+    const allCompleted = steps.every(step => step.status === 'completed');
+    setIsCompleted(allCompleted);
+  }, [steps]);
 
   useEffect(() => {
     const socket = io("http://52.38.228.48:5000");
@@ -114,7 +136,14 @@ export default function Tracker() {
             newSteps[i] = { ...newSteps[i], status: 'completed' };
           }
 
-          setCurrentStep(stepIndex + 1);
+          // If this is the last step and it's completed, mark all steps as completed
+          if (stepIndex === newSteps.length - 1 && data.status === 'completed') {
+            newSteps.forEach(step => step.status = 'completed');
+            setCurrentStep(0); // Reset current step to show all completed
+          } else {
+            setCurrentStep(stepIndex + 1);
+          }
+
           setLastUpdate(data.timestamp);
         }
 
@@ -136,8 +165,15 @@ export default function Tracker() {
     <>
       <Card>
         <CardHeader>
-          <CardTitle className="text-center text-3xl">
-            Data Pipeline Tracker
+          <CardTitle className="text-center text-3xl text-zinc-900">
+            {isCompleted ? (
+              <div className="flex items-center justify-center gap-2 text-green-700">
+                <CheckCircle2 className="h-8 w-8" />
+                <span>Data Pipeline Complete</span>
+              </div>
+            ) : (
+              "Real-Time Data Pipeline Tracker"
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -150,12 +186,12 @@ export default function Tracker() {
 
           <div className="relative mb-16">
             {/* Tracker Bar Background */}
-            <div className="h-20 rounded-full bg-zinc-200 border-4 border-red-600">
+            <div className="h-20 rounded-full bg-zinc-200 border-4 border-blue-700">
               {/* Progress Segments */}
               <div className="relative h-full w-full">
                 {steps.map((step, index) => {
                   const isCompleted = step.status === 'completed';
-                  const isCurrent = step.id === currentStep;
+                  const isCurrent = step.id === currentStep && !isCompleted;
                   const segmentWidth = `${100 / steps.length}%`;
 
                   return (
@@ -165,8 +201,8 @@ export default function Tracker() {
                         "absolute top-0 h-full transition-all duration-600 ease-in-out",
                         index === 0 && "rounded-l-full",
                         index === steps.length - 1 && "rounded-r-full",
-                        isCompleted && "bg-red-600",
-                        isCurrent && "bg-red-400"
+                        isCompleted && "bg-blue-600",
+                        isCurrent && "bg-blue-400"
                       )}
                       style={{
                         left: `${(index * 100) / steps.length}%`,
@@ -183,8 +219,8 @@ export default function Tracker() {
                         >
                           <div
                             className={cn(
-                              "h-full w-full",
-                              isCompleted ? "bg-red-200" : "bg-red-600"
+                              "h-full w-full border-2 border-zinc-100",
+                              isCompleted ? "bg-blue-200" : "bg-blue-600"
                             )}
                           />
                         </div>
@@ -196,18 +232,18 @@ export default function Tracker() {
                 {/* Step Icons and Labels */}
                 <div className="absolute -bottom-16 flex w-full justify-between px-10">
                   {steps.map((step) => {
-                    const isCompleted = step.status === 'completed';
-                    const isCurrent = step.id === currentStep;
+                    const isStepCompleted = step.status === 'completed';
+                    const isCurrent = step.id === currentStep && !isCompleted;
 
                     return (
                       <div key={step.id} className="flex flex-col items-center">
                         <div
                           className={cn(
                             "flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300",
-                            isCompleted &&
-                            "border-red-900 bg-red-600 text-white",
-                            isCurrent && "border-red-400 bg-white text-red-400",
-                            !isCompleted &&
+                            isStepCompleted &&
+                            "border-blue-900 bg-blue-600 text-white",
+                            isCurrent && "border-blue-400 bg-white text-blue-400",
+                            !isStepCompleted &&
                             !isCurrent &&
                             "border-zinc-300 bg-white text-zinc-300"
                           )}
@@ -218,9 +254,9 @@ export default function Tracker() {
                           <p
                             className={cn(
                               "text-sm font-semibold",
-                              isCompleted && "text-red-600",
-                              isCurrent && "text-red-400",
-                              !isCompleted && !isCurrent && "text-zinc-400"
+                              isStepCompleted && "text-blue-600",
+                              isCurrent && "text-blue-400",
+                              !isStepCompleted && !isCurrent && "text-zinc-400"
                             )}
                           >
                             {step.name}
@@ -239,9 +275,18 @@ export default function Tracker() {
           </div>
         </CardContent>
         <CardFooter className="flex justify-between text-sm text-zinc-500">
-          <span>Pipeline ID: #A1B2C3D4</span>
+          <span>Pipeline ID: {pipelineID}</span>
           {lastUpdate && (
-            <span>Last Updated: {new Date(lastUpdate).toLocaleTimeString()}</span>
+            <span>
+              Last Updated:{" "}
+              {new Date(lastUpdate).toLocaleTimeString("en-US", {
+                timeZone: "America/Phoenix",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+              })}
+              {" "}(MST)
+            </span>
           )}
         </CardFooter>
       </Card>
