@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from aws.s3 import get_s3
 from pipe._0ingestion import fetch_files
 from pipe._1cleaning import cleaning
-# from pipe._2transform import transform
+from pipe._2transform import transform
 # from pipe._3check import data_quality_checks
 # from pipe._4report import generate_summary_report
 
@@ -33,10 +33,17 @@ def pipeline():
         # Step 1: Ingestion
         ingested_files = fetch_files(bucket_name, file_keys)
 
-        # Step 2: Cleaning
-        cleaned_dataframes = cleaning(ingested_files)
+        # # Step 2: Cleaning
+        # cleaned_dataframes = cleaning(ingested_files)
 
-        # Steps 3 and 4: Transformation and Reporting (commented for now)
+        # Steps 3 and 4: Transformation and Reporting
+        transform_dataframes = transform(ingested_files)
+        for i, entry in enumerate(transform_dataframes):
+            df = entry["dataframe"]  # Extract the DataFrame
+            name = entry.get("name", f"dataframe_{i+1}")  # Get the name or default to 'dataframe_1', 'dataframe_2', etc.
+            filename = f"{name}_transformed.csv"  # Append '_transformed' to the dataframe name
+            df.to_csv(filename, index=False)  # Save the dataframe to a CSV file without the index
+            print(f"DataFrame {filename} has been saved.")
         # transformed_dataframes = transform(cleaned_dataframes)
         # report = generate_summary_report(transformed_dataframes)
         # data_quality_checks(transformed_dataframes)
