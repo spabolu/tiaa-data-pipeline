@@ -2,20 +2,80 @@ from llm.gait import gAit
 import pandas as pd
 from datetime import datetime
 import numpy as np
+import io
+import sys
+import pandas as pd
+from datetime import datetime
+import io
+import sys
+
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.units import inch
+from reportlab.platypus import Paragraph, Spacer
+
+import sweetviz as sv
 
 def transform(dataframes):
     ai = gAit()
 
     tempDataframes = dataframes.copy()
     report_AI_txt = ""
+    qualityCheckBeforeText = ""
+    for entry in dataframes:
+        print(f"DataFrame {entry['name']}:\n{entry['dataframe'].head(10)}\n")
+        qualityCheckBeforeText = "Quality Check Before Pipeline:\n\n"
+        # Create a list of dictionaries, each containing the name and corresponding DataFrame
 
     for entry in dataframes:
         df = entry["dataframe"]  # Extract the DataFrame
         # Drop unnamed columns (where column names are None, '', or contain 'Unnamed')
         entry["dataframe"] = df.drop(columns=[col for col in df.columns if col is None or col == '' or 'Unnamed' in str(col)])
+        df = df.drop_duplicates()
+
         print(f"DataFrame {entry['name']}:\n{entry['dataframe'].head(10)}\n")
+    tempDataframes = dataframes.copy()
 
+    llm_prompt_data_quality_check = """
+    I am going to loop through an array of data frames. I will provide the dataframe name and the head of each one.
+    Don’t drop any unnamed columns. Assume I already imported the dataframes and their variables to directly use.
 
+    Generate a Python script that does NOT include markdown formatting, ```python, in the python script. 
+    This python script should provide code to find the number of NA values, duplicate entries, and statistics data to display the overall quality of a specific file.
+    Provide a 1 sentence description of how each file should be changed to improve. 
+    Provide these details for each specific file. Make the output as only plain text. No JSON should be in this text.
+    Give me ONLY Python code and nothing else. I will be running this code directly. Remove Markdown text from the beginning and end of the script. 
+    """
+
+    for entry in dataframes:
+        name, df = entry['name'], entry['dataframe']
+        llm_prompt_data_quality_check += f"\nDataframe Name: {name}\nHead:\n{df.head(10).to_string(index=False)}\n"
+
+    # response = genai.generate_response(llm_prompt_data_quality_check)    
+    # exec(response)
+    # qualityCheckBeforeText += response
+    # print(qualityCheckBeforeText+"\n\n")
+
+    response = ai.ask_llm(llm_prompt_data_quality_check)
+
+    # Clean up the generated script to remove unsupported arguments
+    response = response.replace("datetime_is_numeric=True", " ") if response is not None else ""    
+
+    # Capture the output of the generated code
+    output_capture = io.StringIO()
+    sys.stdout = output_capture  # Redirect stdout
+
+    # Execute the cleaned-up generated code
+    exec(response)
+
+    # Reset stdout to normal
+    sys.stdout = sys.__stdout__
+
+    # Append captured output to the qualityCheckBeforeText
+    qualityCheckBeforeText += output_capture.getvalue()
+
+    # Print the final quality check text
     llm_prompt_data_transformation_AddingColForBusinessValue = """
     I am going to loop through an array of data frames. I will provide the dataframe name and the head of each one.
     Don’t drop any unnamed columns. Assume I already imported the dataframes and their variables to directly use. Do not preprocess the data as it is already preprocessed.
@@ -532,7 +592,86 @@ def transform(dataframes):
         name, df = entry['name'], entry['dataframe']
         print(f"\n\033[38;5;37m Dataframe: {name}\nHead:\n{df.head(10).to_string(index=False)}\n\033[0m")
 
+
+    # REPORT GENERATION
+    # Define the filename for the PDF
+    pdf_filename = "business_report.pdf"
+    # Set up the PDF document
+    doc = SimpleDocTemplate(pdf_filename, pagesize=letter)
+    styles = getSampleStyleSheet()
+    # Create a list to hold the elements for the PDF
+    elements = []
+    # Add the title
+    title_style = styles['Title']
+    title = Paragraph("Business Insights Report", title_style)
+    elements.append(title)
+    elements.append(Spacer(1, 0.2 * inch))  # Add some space below the title
+    # Add the subtitle
+    subtitle_style = styles['Heading2']
+    subtitle = Paragraph("Generated Insights & Analysis", subtitle_style)
+    elements.append(subtitle)
+    elements.append(Spacer(1, 0.2 * inch))  # Add space below the subtitle
+
+    # Define the LLM prompt that you want to ask the LLM
+    llm_prompt_data_analysis = f"""
+    I want to generate a business insight report.
+    Can you respond with only the report and nothing else
+    Do not include the markdown file format, do not try to bold anything.
+    If you want to make a new bullet point, make a new line for it.
+    1. Summarize each CSV file.
+    Here are the dataframes:
+    """
+    for entry in dataframes:
+        name, df = entry['name'], entry['dataframe']
+        llm_prompt_data_analysis += f"\nDataframe Name: {name}\nHead:\n{df.head(10).to_string(index=False)}\n"
+    llm_prompt_data_analysis += f"""
+    2. Include information about quality checks completed on the raw data. Be straightforward and show the quality checks directly in the PDF output: {qualityCheckBeforeText}
+    3. Analyze relationships between the datasets and suggest business insights based on their interaction.
+    4. Provide any other relevant business recommendations based on the analysis.
+    """
+    # Request the LLM response
+    while True:
+        response = ai.ask_llm(llm_prompt_data_analysis)
+        if response:
+            # Print the response for debugging
+            print("\033[92m" + response + "\033[0m")
+            # Split the response into paragraphs and add to the PDF
+            content_style = styles['BodyText']
+            paragraphs = response.split("\n\n")  # Separate into paragraphs
+            for paragraph in paragraphs:
+                wrapped_paragraph = Paragraph(paragraph, content_style)
+                elements.append(wrapped_paragraph)
+                elements.append(Spacer(1, 0.2 * inch))  # Add space between paragraphs
+            break  # Exit loop if the response is successfully handled
+        else:
+            print("No response from LLM. Retrying...")
+    # Build the PDF with the collected elements
+
+
+    subtitle_style = styles['Heading2']
+    subtitle = Paragraph("Recommended Transformations", subtitle_style)
+    elements.append(subtitle)
+    paragraph2 = Paragraph(report_AI_txt, styles['Normal'])
+    elements.append(paragraph2)
+    elements.append(Spacer(1, 0.2 * inch))  # Add space below the subtitle
+
+    doc.build(elements)
+    # Confirmation message
+    print(f"Business report has been generated and saved as '{pdf_filename}'.")
+
+
+# Iterate over each dataframe entry
+    for entry in dataframes:
+        name, df = entry['name'], entry['dataframe']
+        # Generate the Sweetviz report
+        html_filename = f"{name}_Profile.html"  # Define the output HTML filename
+        report = sv.analyze(df)  # Create the analysis report
+        # Save the report as an HTML file
+        report.show_html(filepath=html_filename, open_browser=False)  # Avoid automatically opening in browser
+        print(f"Report saved as {html_filename}")
+
     return dataframes
+
 
 
 
