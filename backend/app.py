@@ -69,7 +69,7 @@ def pipeline():
 
         # Step 2: Cleaning
         emit_progress("Data Cleaning", "in_progress", "Starting data cleaning...")
-        # cleaned_dataframes = cleaning(ingested_files)
+        cleaned_dataframes = cleaning(ingested_files)
         # time.sleep(2)  # Simulated work
         emit_progress("Data Cleaning", "completed", "Successfully cleaned data")
 
