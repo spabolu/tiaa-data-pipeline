@@ -7,8 +7,8 @@ import {
   FileSpreadsheet,
   LineChart,
   Server,
+  LucideIcon,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -18,75 +18,113 @@ import {
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { io } from "socket.io-client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
-const pipelineSteps = [
+interface PipelineStep {
+  id: number;
+  name: string;
+  icon: LucideIcon;
+  description: string;
+  status: 'pending' | 'in_progress' | 'completed';
+  lastUpdate?: string;
+}
+
+interface PipelineUpdate {
+  step: string;
+  status: 'pending' | 'in_progress' | 'completed';
+  description?: string;
+  timestamp: string;
+}
+
+const pipelineSteps: PipelineStep[] = [
   {
     id: 1,
     name: "Data Ingestion",
     icon: Database,
     description: "Collecting raw data from various sources",
-    time: "2 mins ago",
+    status: "pending",
   },
   {
     id: 2,
     name: "Data Cleaning",
     icon: FileSpreadsheet,
     description: "Preprocessing and cleaning the collected data",
-    time: "1 min ago",
+    status: "pending",
   },
   {
     id: 3,
     name: "Data Analysis",
     icon: LineChart,
     description: "Performing statistical analysis",
-    time: "In progress",
+    status: "pending",
   },
   {
     id: 4,
     name: "Insight Generation",
     icon: AlertCircle,
     description: "Extracting meaningful insights",
-    time: "Coming up",
+    status: "pending",
   },
   {
     id: 5,
     name: "Distribution",
     icon: Server,
     description: "Distributing reports to stakeholders",
-    time: "Coming up",
+    status: "pending",
   },
 ];
 
 export default function Tracker() {
+  const [steps, setSteps] = useState<PipelineStep[]>(pipelineSteps);
   const [currentStep, setCurrentStep] = useState(1);
-  const [isAutoAdvancing, setIsAutoAdvancing] = useState(false);
-
-  const handleAdvance = () => {
-    if (currentStep < pipelineSteps.length) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const handleAutoAdvance = () => {
-    setIsAutoAdvancing(!isAutoAdvancing);
-    if (currentStep === pipelineSteps.length) {
-      setCurrentStep(1);
-    }
-  };
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdate, setLastUpdate] = useState<string | null>(null);
 
   useEffect(() => {
     const socket = io("http://52.38.228.48:5000/");
 
     socket.on("connect", () => {
       console.log("Connected to WebSocket server");
+      setError(null);
     });
 
-    socket.on("pipeline_update", (data) => {
+    socket.on("connect_error", (err) => {
+      console.error("Connection error:", err);
+      setError("Failed to connect to the pipeline server");
+    });
+
+    socket.on("pipeline_update", (data: PipelineUpdate) => {
       console.log("Pipeline update received:", data);
-      const stepIndex = pipelineSteps.findIndex(step => step.name === data.step);
-      if (stepIndex !== -1) {
-        setCurrentStep(stepIndex + 1);
-      }
+
+      setSteps(prevSteps => {
+        const newSteps = [...prevSteps];
+        const stepIndex = newSteps.findIndex(step => step.name === data.step);
+
+        if (stepIndex !== -1) {
+          // Update the current step
+          newSteps[stepIndex] = {
+            ...newSteps[stepIndex],
+            status: data.status,
+            description: data.description || newSteps[stepIndex].description,
+            lastUpdate: data.timestamp
+          };
+
+          // Mark previous steps as completed
+          for (let i = 0; i < stepIndex; i++) {
+            newSteps[i] = { ...newSteps[i], status: 'completed' };
+          }
+
+          setCurrentStep(stepIndex + 1);
+          setLastUpdate(data.timestamp);
+        }
+
+        return newSteps;
+      });
+    });
+
+    socket.on("pipeline_error", (data: { error: string }) => {
+      console.error("Pipeline error:", data);
+      setError(data.error);
     });
 
     return () => {
@@ -103,15 +141,22 @@ export default function Tracker() {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {error && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
           <div className="relative mb-16">
             {/* Tracker Bar Background */}
             <div className="h-20 rounded-full bg-zinc-200 border-4 border-red-600">
               {/* Progress Segments */}
               <div className="relative h-full w-full">
-                {pipelineSteps.map((step, index) => {
-                  const isCompleted = step.id < currentStep;
+                {steps.map((step, index) => {
+                  const isCompleted = step.status === 'completed';
                   const isCurrent = step.id === currentStep;
-                  const segmentWidth = `${100 / pipelineSteps.length}%`;
+                  const segmentWidth = `${100 / steps.length}%`;
 
                   return (
                     <div
@@ -119,16 +164,16 @@ export default function Tracker() {
                       className={cn(
                         "absolute top-0 h-full transition-all duration-600 ease-in-out",
                         index === 0 && "rounded-l-full",
-                        index === pipelineSteps.length - 1 && "rounded-r-full",
+                        index === steps.length - 1 && "rounded-r-full",
                         isCompleted && "bg-red-600",
                         isCurrent && "bg-red-400"
                       )}
                       style={{
-                        left: `${(index * 100) / pipelineSteps.length}%`,
+                        left: `${(index * 100) / steps.length}%`,
                         width: segmentWidth,
                       }}
                     >
-                      {index < pipelineSteps.length - 1 && (
+                      {index < steps.length - 1 && (
                         <div
                           className="absolute -right-3 top-0 h-full w-6 overflow-hidden"
                           style={{
@@ -150,8 +195,8 @@ export default function Tracker() {
 
                 {/* Step Icons and Labels */}
                 <div className="absolute -bottom-16 flex w-full justify-between px-10">
-                  {pipelineSteps.map((step) => {
-                    const isCompleted = step.id < currentStep;
+                  {steps.map((step) => {
+                    const isCompleted = step.status === 'completed';
                     const isCurrent = step.id === currentStep;
 
                     return (
@@ -180,7 +225,10 @@ export default function Tracker() {
                           >
                             {step.name}
                           </p>
-                          <p className="text-xs text-zinc-500">{step.time}</p>
+                          <p className="text-xs text-zinc-500">
+                            {step.status === 'in_progress' ? 'In Progress' :
+                              step.status === 'completed' ? 'Completed' : 'Pending'}
+                          </p>
                         </div>
                       </div>
                     );
@@ -189,27 +237,12 @@ export default function Tracker() {
               </div>
             </div>
           </div>
-          <div className="pt-8">
-            <div className="flex justify-center space-x-4">
-              <Button
-                onClick={handleAdvance}
-                disabled={
-                  currentStep === pipelineSteps.length || isAutoAdvancing
-                }
-              >
-                Advance Step
-              </Button>
-              <Button onClick={handleAutoAdvance} variant="outline">
-                {isAutoAdvancing ? "Stop Auto Advance" : "Start Auto Advance"}
-              </Button>
-            </div>
-          </div>
         </CardContent>
         <CardFooter className="flex justify-between text-sm text-zinc-500">
           <span>Pipeline ID: #A1B2C3D4</span>
-          {/* <span>
-            Est. Completion: {pipelineSteps.length - currentStep + 1} minutes
-          </span> */}
+          {lastUpdate && (
+            <span>Last Updated: {new Date(lastUpdate).toLocaleTimeString()}</span>
+          )}
         </CardFooter>
       </Card>
     </>
