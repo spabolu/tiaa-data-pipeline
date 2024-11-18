@@ -13,6 +13,7 @@ def Populate_RDS(dataframes, schema_name):
         for entry in dataframes:
             df = entry["dataframe"]
             table_name = entry["name"].split('/')[1]
+            table_name = table_name.split('.')[0]
             
             # Step 2: Create tables
             create_table(cursor, schema_name, table_name, df)
