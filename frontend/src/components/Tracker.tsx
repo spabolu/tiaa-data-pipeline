@@ -81,7 +81,7 @@ export default function Tracker() {
   const [lastUpdate, setLastUpdate] = useState<string | null>(null);
 
   useEffect(() => {
-    const socket = io("http://52.38.228.48:5000/");
+    const socket = io("http://52.38.228.48:5000/pipeline");
 
     socket.on("connect", () => {
       console.log("Connected to WebSocket server");
