@@ -263,3 +263,19 @@ def transform(dataframes):
         print(f"DataFrame {filename} has been saved.")
 
     return dataframes
+
+
+
+import pandas as pd
+# MOCK FUNCTION CALL
+if __name__ == "__main__":
+    portfolio = pd.read_csv("portfolio.csv")
+    profile = pd.read_csv("profile.csv")
+    transcript = pd.read_csv("transcript.csv")
+
+    dataframes = [
+        {"name": "portfolio", "dataframe": portfolio},
+        {"name": "profile", "dataframe": profile},
+        {"name": "transcript", "dataframe": transcript}
+    ]
+    transform(dataframes)

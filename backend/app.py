@@ -56,6 +56,7 @@ def pipeline():
         data = request.get_json()
         bucket_name = data.get('bucket')
         file_keys = data.get('file_keys', [])
+        folder_name = file_keys[0].split('/')[0]
 
         if not bucket_name or not file_keys:
             return jsonify({"error": "Invalid input. 'bucket' and 'file_keys' are required."}), 400
@@ -86,7 +87,7 @@ def pipeline():
 
         # Step 5: Distribution
         emit_progress("Distribution", "in_progress", "Preparing distribution...")
-        Populate_RDS(transformed_dataframes)
+        Populate_RDS(transformed_dataframes, folder_name)
         # time.sleep(1)  # Simulated work
         emit_progress("Distribution", "completed", "Pipeline completed successfully")
 
