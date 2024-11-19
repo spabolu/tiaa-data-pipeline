@@ -3,11 +3,14 @@ import pandas as pd
 from datetime import datetime
 import numpy as np
 import io
+import re
 import sys
 import pandas as pd
 from datetime import datetime
 import io
 import sys
+import sklearn
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet
@@ -17,6 +20,14 @@ from reportlab.platypus import Paragraph, Spacer
 
 import sweetviz as sv
 
+def extract_code_from_md(markdown_text):
+    pattern = r'```(?:python)?\n(.*?)```'
+    code_blocks = re.findall(pattern, markdown_text, re.DOTALL)
+    
+    result = '\n'.join(block.replace('print("\n', 'print("\\n') for block in code_blocks)
+    
+    return result
+    
 def transform(dataframes):
     ai = gAit()
 
@@ -49,31 +60,70 @@ def transform(dataframes):
     """
 
     for entry in dataframes:
-        name, df = entry['name'], entry['dataframe']
+        name, df = entry['name'], entry['dataframe'] #Customer_transcation/porfolio.csv
         llm_prompt_data_quality_check += f"\nDataframe Name: {name}\nHead:\n{df.head(10).to_string(index=False)}\n"
 
     # response = genai.generate_response(llm_prompt_data_quality_check)    
     # exec(response)
     # qualityCheckBeforeText += response
     # print(qualityCheckBeforeText+"\n\n")
+    
+    # response = ai.ask_llm(llm_prompt_data_quality_check)
 
-    response = ai.ask_llm(llm_prompt_data_quality_check)
+    # # Clean up the generated script to remove unsupported arguments
+    # response = response.replace("datetime_is_numeric=True", " ") if response is not None else ""    
 
-    # Clean up the generated script to remove unsupported arguments
-    response = response.replace("datetime_is_numeric=True", " ") if response is not None else ""    
-
-    # Capture the output of the generated code
-    output_capture = io.StringIO()
-    sys.stdout = output_capture  # Redirect stdout
+    # # Capture the output of the generated code
+    # output_capture = io.StringIO()
+    # sys.stdout = output_capture  # Redirect stdout
 
     # Execute the cleaned-up generated code
-    exec(response)
+    # exec(response)
 
+    attempt = 0
+    while True:
+        # Send prompt to the LLM and get a response
+            response = ai.ask_llm(llm_prompt_data_quality_check)
+
+            # Clean up the generated script to remove unsupported arguments
+            response = response.replace("datetime_is_numeric=True", " ") if response is not None else ""    
+
+            # Capture the output of the generated code
+            output_capture = io.StringIO()
+            sys.stdout = output_capture  # Redirect stdout        if response:
+            # Remove markdown formatting if present
+
+            if response.startswith("```python") and response.endswith("```"):
+                response = response[9:-3].strip()  # Strip the opening and closing markdown syntax
+            # Print the response in green for success
+            print("\033[92m" + response + "\033[0m")
+            
+            # Attempt to execute the generated code
+            try:
+                exec(extract_code_from_md(response), globals(), locals())
+
+            # Loop through each dataframe to compare rows and columns
+                print("Quality Check Successfull")
+                break
+            except Exception as e:
+                print(f"Error executing generated code: {e}")
+                attempt += 1
+                # If error occurs, ask the LLM to adjust the code and retry
+                if attempt < 3:
+                    print("Add Column Prompt Attempt: ", attempt)
+                    llm_prompt_data_quality_check += f"\nError encountered: {str(e)}\nPlease adjust the code and try again.\nThe current code is {response}, so make sure to apply modifications to fix the code."
+                else:
+                    print("Max number of attempts reached. Continue to next prompt")
+                    break
+                    # llm_prompt_data_transformation_test = llm_prompt_data_transformation
+    
     # Reset stdout to normal
     sys.stdout = sys.__stdout__
 
     # Append captured output to the qualityCheckBeforeText
     qualityCheckBeforeText += output_capture.getvalue()
+
+    print("QUALITY CHECK\n\n", qualityCheckBeforeText)
 
     # Print the final quality check text
     llm_prompt_data_transformation_AddingColForBusinessValue = """
@@ -130,7 +180,7 @@ def transform(dataframes):
             # Attempt to execute the generated code
             try:
                 response += update_dataframes_code
-                exec(response, globals(), locals())
+                exec(extract_code_from_md(response), globals(), locals())
 
             # Loop through each dataframe to compare rows and columns
                 for df1, df2 in zip(dataframes, tempDataframes):
@@ -238,7 +288,7 @@ def transform(dataframes):
             # Attempt to execute the generated code
             try:
                 response += update_dataframes_code
-                exec(response, globals(), locals())
+                exec(extract_code_from_md(response), globals(), locals())
 
             # Loop through each dataframe to compare rows and columns
                 for df1, df2 in zip(dataframes, tempDataframes):
@@ -343,7 +393,7 @@ def transform(dataframes):
             # Attempt to execute the generated code
             try:
                 response += update_dataframes_code
-                exec(response, globals(), locals())
+                exec(extract_code_from_md(response), globals(), locals())
 
             # Loop through each dataframe to compare rows and columns
                 for df1, df2 in zip(dataframes, tempDataframes):
@@ -443,7 +493,7 @@ def transform(dataframes):
             # Attempt to execute the generated code
             try:
                 response += update_dataframes_code
-                exec(response, globals(), locals())
+                exec(extract_code_from_md(response), globals(), locals())
 
             # Loop through each dataframe to compare rows and columns
                 for df1, df2 in zip(dataframes, tempDataframes):
@@ -558,14 +608,13 @@ def transform(dataframes):
     for entry in dataframes:
         name, df = entry['name'], entry['dataframe']
         # Generate the Sweetviz report
-        html_filename = f"{name}_Profile.html"  # Define the output HTML filename
+        name = entry["name"].split('/')[1]
+        name = name.split('.')[0]
+            
+        html_filename = f"{name}.html"  # Define the output HTML filename
         report = sv.analyze(df)  # Create the analysis report
         # Save the report as an HTML file
         report.show_html(filepath=html_filename, open_browser=False)  # Avoid automatically opening in browser
         print(f"Report saved as {html_filename}")
 
     return dataframes
-
-
-
-

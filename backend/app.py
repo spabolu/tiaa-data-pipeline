@@ -118,6 +118,11 @@ def pipeline():
         elapsed = timer.end_stage()
         emit_progress("Insight Generation", "completed", "Insights generated", elapsed)
 
+        print("==========")
+        print("ENTERING DB")
+        print("==========")
+
+
         # Step 5/6: distribution/metadata
         timer.start_stage("Distribution")
         emit_progress("Distribution", "in_progress", "Preparing distribution...")
@@ -253,4 +258,4 @@ def index():
     return jsonify({"message": "Welcome to the Data Pipeline API!"})
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=False)

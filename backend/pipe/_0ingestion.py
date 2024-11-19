@@ -10,6 +10,7 @@ def fetch_file(bucket_name, file_key):
     try:
         obj = s3.get_object(Bucket=bucket_name, Key=file_key)
         if file_key.endswith('.csv'):
+            print('Reading csv:', file_key)
             return pd.read_csv(StringIO(obj['Body'].read().decode('utf-8')))
         elif file_key.endswith('.xlsx'):
             return pd.read_excel(obj['Body'])
