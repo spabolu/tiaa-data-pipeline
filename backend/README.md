@@ -1,4 +1,4 @@
-# TIAA DataPipeline Hackathon Backend
+# TIAA Data Pipeline Hackathon Backend
 
 This is the backend for the TIAA-DataPipeline project. It's a Flask-based application that powers the data processing pipeline and exposes a REST API for the frontend.
 

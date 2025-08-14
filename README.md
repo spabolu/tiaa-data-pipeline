@@ -1,4 +1,4 @@
-# TIAA DataPipeline Hackathon
+# TIAA Data Pipeline Hackathon
 
 Welcome to the TIAA-DataPipeline project! This is a hackathon project that demonstrates the use of AI agents to automate a data processing pipeline. The project is divided into a frontend and a backend, each with its own set of responsibilities.
 

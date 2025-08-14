@@ -1,4 +1,4 @@
-# TIAA DataPipeline Hackathon Frontend
+# TIAA Data Pipeline Hackathon Frontend
 
 This is the frontend for the TIAA-DataPipeline project, a hackathon entry demonstrating the use of AI agents to automate a data pipeline.
 
