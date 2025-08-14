@@ -1,50 +1,92 @@
-# React + TypeScript + Vite
+# TIAA DataPipeline Hackathon Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is the frontend for the TIAA-DataPipeline project, a hackathon entry demonstrating the use of AI agents to automate a data pipeline.
 
-Currently, two official plugins are available:
+## Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+The TIAA-DataPipeline project showcases a system where different AI agents collaborate to process data. Each agent is responsible for a specific stage of the pipeline:
 
-## Expanding the ESLint configuration
+1. **Ingestion:** Handles data intake.
+2. **Cleaning:** Cleans and preprocesses the data.
+3. **Transform:** Transforms the data into a suitable format.
+4. **Checking:** Performs quality checks on the data.
+5. **Report:** Generates reports from the processed data.
+6. **Storage:** Stores the data.
+7. **Metadata:** Manages metadata for the pipeline.
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+The backend contains all the AI logic, while this frontend provides a user-friendly interface to interact with the system.
 
-- Configure the top-level `parserOptions` property like this:
+## Features
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+* **File Upload:** Upload datasets to be processed by the data pipeline.
+* **Interactive UI:** Interact with the AI agents and view the pipeline's progress.
+* **Data Visualization:** View reports and visualizations generated from the processed data.
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+## Tech Stack
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+* **React:** A JavaScript library for building user interfaces.
+* **Vite:** A fast build tool for modern web projects.
+* **TypeScript:** A typed superset of JavaScript.
+* **Tailwind CSS:** A utility-first CSS framework.
+* **Recharts:** A composable charting library built on React components.
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
+## Getting Started
+
+To get a local copy up and running, follow these simple steps.
+
+### Prerequisites
+
+* Node.js (v18 or later)
+* npm
+
+### Installation
+
+1. Clone the repo
+
+   ```sh
+   git clone https://github.com/spabolu/TIAA-DataPipeline.git
+   ```
+
+2. Navigate to the frontend directory
+
+   ```sh
+   cd TIAA-DataPipeline/frontend
+   ```
+
+3. Install NPM packages
+
+   ```sh
+   npm install
+   ```
+
+4. Run the development server
+
+   ```sh
+   npm run dev
+   ```
+
+The application will be available at `http://localhost:5173` (or another port if 5173 is in use).
+
+## Project Structure
+
+```bash
+frontend/
+├── public/             # Static assets
+├── src/
+│   ├── assets/         # Images and other assets
+│   ├── components/     # Reusable React components
+│   │   ├── ui/         # UI components from shadcn/ui
+│   │   ├── Charts.tsx
+│   │   ├── FileUpload.tsx
+│   │   ├── Insights.tsx
+│   │   ├── LLMOutput.tsx
+│   │   └── Tracker.tsx
+│   ├── lib/            # Utility functions
+│   ├── App.tsx         # Main application component
+│   ├── main.tsx        # Entry point of the application
+│   └── index.css       # Global styles
+├── .eslintrc.cjs       # ESLint configuration
+├── package.json        # Project dependencies and scripts
+├── tailwind.config.js  # Tailwind CSS configuration
+└── vite.config.ts      # Vite configuration
 ```

@@ -1,3 +1,5 @@
+# Automates Access Token retrieval
+
 import requests
 import hashlib
 import base64
@@ -80,14 +82,14 @@ def exchange_code_for_token(token_url, client_id, client_secret, authorization_c
 
 
 # Step 1: Initialize Parameters
-client_id = '7v15em5a0iqvb3hn5r69cg3485'
-client_secret = '11181idr8ho95i6k67v99p3go2sn72kri5j5qdg2lo4jl0uj9ri4'
-auth_url = 'https://llm-proxy-ctl.auth.us-east-1.amazoncognito.com/oauth2/authorize'
-token_url = 'https://llm-proxy-ctl.auth.us-east-1.amazoncognito.com/oauth2/token'
+client_id = 'client_id_here'
+client_secret = 'client_secret_here'
+auth_url = 'https://us-east-1.amazoncognito.com/oauth2/authorize'
+token_url = 'https://us-east-1.amazoncognito.com/oauth2/token'
 redirect_uri = 'https://oauth.pstmn.io/v1/callback'
 scope = 'openid'
-username = 'spabolu2@asu.edu'
-password = 'GiRjz%H$9?ijuT7'
+username = 'email_here'
+password = 'password_here'
 
 # Step 2: Generate PKCE
 code_verifier, code_challenge = generate_pkce()

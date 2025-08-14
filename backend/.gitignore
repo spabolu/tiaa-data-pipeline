@@ -1,0 +1,14 @@
+# Ignore sensitive files
+.env.local
+access_token.txt
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+
+# Ignore generated files
+business_report.pdf
+portfolio.html
+profile.html
+transcript.html
+*.csv

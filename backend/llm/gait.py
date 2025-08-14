@@ -14,7 +14,7 @@ class gAit:
         except FileNotFoundError:
             raise ValueError(f"The file {token_file} was not found. Please provide a valid file path.")
         
-        self.url = "https://api-llm.ctl-gait.clientlabsaft.com/chat/completions"
+        self.url = "https://api-llm.ai_access_url.com/chat/completions"
         self.headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.access_token}",
