@@ -36,12 +36,12 @@ To get a local copy up and running, follow these steps.
 
 1.  **Clone the repository**
     ```sh
-    git clone https://github.com/spabolu/TIAA-DataPipeline.git
+    git clone https://github.com/spabolu/tiaa-data-pipeline.git
     ```
 
 2.  **Navigate to the backend directory**
     ```sh
-    cd TIAA-DataPipeline/backend
+    cd tiaa-data-pipeline/backend
     ```
 
 3.  **Create and activate a virtual environment**
