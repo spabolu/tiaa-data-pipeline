@@ -44,13 +44,13 @@ To get a local copy up and running, follow these simple steps.
 1. Clone the repo
 
    ```sh
-   git clone https://github.com/spabolu/TIAA-DataPipeline.git
+   git clone https://github.com/spabolu/tiaa-data-pipeline.git
    ```
 
 2. Navigate to the frontend directory
 
    ```sh
-   cd TIAA-DataPipeline/frontend
+   cd tiaa-data-pipeline/frontend
    ```
 
 3. Install NPM packages
