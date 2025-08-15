@@ -44,8 +44,8 @@ To get the entire project up and running, you will need to start both the fronte
 
 1.  **Clone the repository**
     ```sh
-    git clone https://github.com/spabolu/TIAA-DataPipeline.git
-    cd TIAA-DataPipeline
+    git clone https://github.com/spabolu/tiaa-data-pipeline.git
+    cd tiaa-data-pipeline
     ```
 
 2.  **Set up the backend**
